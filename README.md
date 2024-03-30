@@ -15,7 +15,7 @@ The proposed architecture consists of several key components:
 
 
 ### MVC Diagram :
-![MVC Diagram](https://github.com/ai-mohammed/Projet_Cloud_Ferme_Urbaine/preview_img/Architecture_Proposée.png)
+![Architecture Proposée](https://github.com/ai-mohammed/Projet_Cloud_Ferme_Urbaine/main/preview_img/Architecture_Proposée.png)
 
 ### Sequence Diagram :
-![Sequence Diagram](https://github.com/ai-mohammed/Projet_Cloud_Ferme_Urbaine/preview_img/Interactions_entre_les_Composants.png)
+![Sequence Diagram](https://github.com/ai-mohammed/Projet_Cloud_Ferme_Urbaine/main/preview_img/Interactions_entre_les_Composants.png)
