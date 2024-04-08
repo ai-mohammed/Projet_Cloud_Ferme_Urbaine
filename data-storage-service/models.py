@@ -13,9 +13,6 @@ conn = psycopg2.connect(
 # Create cursor
 cur = conn.cursor()
 
-# Create database
-cur.execute("CREATE DATABASE Urban_Farm_Monitoring")
-
 # Create "Sensors" table
 cur.execute("""
     CREATE TABLE Sensors (
