@@ -7,11 +7,11 @@ WORKDIR /app
 # Add current directory to /app
 ADD . /app
 
-ENV DB_HOST="host.docker.internal"
-ENV DB_PORT="5432"
-ENV DB_NAME="Urban_Farm_Monitoring"
-ENV DB_USER="admin"
-ENV DB_PASS="adminXDD"
+ENV DB_HOST=host.docker.internal
+ENV DB_PORT=5432
+ENV DB_NAME=Urban_Farm_Monitoring
+ENV DB_USER=admin
+ENV DB_PASS=adminXDD
 
 
 # Install dependencies
