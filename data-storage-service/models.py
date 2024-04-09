@@ -1,14 +1,14 @@
 import os
 import psycopg
 
-host=os.getenv("DB_HOST"),
-port=os.getenv("DB_PORT"),
-database=os.getenv("DB_NAME"),
-user=os.getenv("DB_USER"),
-password=os.getenv("DB_PASS"),
+host=os.getenv("DB_HOST")
+port=os.getenv("DB_PORT")
+database=os.getenv("DB_NAME")
+user=os.getenv("DB_USER")
+password=os.getenv("DB_PASS")
 
 # Connect to PostgreSQL server
-conn = psycopg.connect(f"postgresql://{user}:{password}@{host}:{port}/{database}")
+conn = psycopg.connect(f"dbname='{database}' user='{user}' host='{host}' password='{password}'")
 
 # Create cursor
 cur = conn.cursor()
