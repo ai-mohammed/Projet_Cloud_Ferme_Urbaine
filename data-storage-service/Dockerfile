@@ -1,5 +1,5 @@
-# Python 3.12.2
-FROM python:3.12.2-bookworm
+# Python 3.11.9
+FROM python:3.11.9-bookworm
 
 # Set working directory to /app
 WORKDIR /app

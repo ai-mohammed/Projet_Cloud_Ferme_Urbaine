@@ -1,15 +1,35 @@
 version: '3.8'
 services:
   flask-app:
-    build: .
+    build: .\data-collection-service\Dockerfile
     ports:
       - "5000:5000"
     environment:
-      FLASK_APP: app.py
+      FLASK_APP: .\data-collection-service\data-collection-service.py
       FLASK_ENV: development
       FLASK_DEBUG: 1
     networks:
       - my_network
+    
+  postgres-server:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminXDD
+      POSTGRES_DB: Urban_Farm_Monitoring
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    networks:
+      - my_network
+
+  data-storage-service:
+    build: .\data-storage-service\Dockerfile
+    networks:
+      - my_network
+    depends_on:
+      - postgres-server
 
   sensor1:
     image: abelfodil/sensor:0.0.1
@@ -104,7 +124,9 @@ services:
       - my_network
     depends_on:
       - flask-app
-      
+
+
+
 networks:
   my_network:
     driver: bridge
