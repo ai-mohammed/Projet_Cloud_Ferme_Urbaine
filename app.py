@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import base64
 import msgpack
+import traceback
 
 app = Flask(__name__)
 
@@ -18,8 +19,9 @@ def receive_data():
         print(unpacked_data)
 
         # Return a success response
-        return jsonify({"status": "success", "message": "Data received successfully", "data": unpacked_data}), 200
+        return jsonify({"status": "success", "message": "Data received successfully", "data": unpacked_data}), 201
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 400
 
 if __name__ == '__main__':
