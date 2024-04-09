@@ -1,8 +1,8 @@
 import os
-import psycopg3
+import psycopg
 
 # Connect to PostgreSQL server
-conn = psycopg3.connect(
+conn = psycopg.connect(
     host=os.getenv("DB_HOST"),
     port=os.getenv("DB_PORT"),
     database=os.getenv("DB_NAME"),
