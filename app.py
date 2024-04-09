@@ -18,7 +18,7 @@ def receive_data():
         print(unpacked_data)
 
         # Return a success response
-        return jsonify({"status": "success", "message": "Data received successfully", "data": unpacked_data}), 200
+        return jsonify({"status": "success", "message": "Data received successfully", "data": unpacked_data}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
