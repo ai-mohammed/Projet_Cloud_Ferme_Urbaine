@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import base64
 import msgpack
 import traceback
-import psycopg2
+import psycopg
 import os
 
 app = Flask(__name__)
@@ -50,7 +50,7 @@ def receive_data():
                 humidity_percent = float(measures[key])
                 break
 
-
+        # Env variables
         host=os.getenv("postgtres-server")
         port=os.getenv("5432")
         database=os.getenv("POSTGRES_DB")
@@ -58,10 +58,12 @@ def receive_data():
         password=os.getenv("POSTGRES_PASSWORD")
 
         # Connect to PostgreSQL server
-        conn = psycopg2.connect(f"dbname='{database}' user='{user}' host='{host}' port='{port}' password='{password}'")
-        def insert_into_table(conn, table, data):
+        conn = psycopg.connect(f"dbname='{database}' user='{user}' host='{host}' port='{port}' password='{password}'")
+        cur = conn.cursor()
+        
+        # Function to insert data into a table
+        def insert_into_table(conn, cur, table, data):
             # Create a cursor from the connection
-            cur = conn.cursor()
 
             # Create the SQL command
             columns = ', '.join(data.keys())
@@ -74,22 +76,33 @@ def receive_data():
             # Commit the changes
             conn.commit()
 
-            # Close the cursor
-            cur.close()
-
         
-        data1={
+        sensor={
             'ID': sensor_id,
-            'Provider': sensor_version,
-            'Location': 'Location'
+            'Provider': sensor_version
         }
-        data2={}
-        data3={}
+        plant={
+            'ID': plant_id
+        }
         
-        insert_into_table(conn, 'Sensors', data1)
-        insert_into_table(conn, 'Plants', data2)
-        insert_into_table(conn, 'Measurments', data3)
-   
+        if cur.execute("SELECT ID FROM Measurements") == []:
+            measurement_id = 0
+        else:
+            measurement_id = cur.execute("SELECT MAX(ID) FROM Measurements") + 1
+        measurement={
+            'ID': measurement_id,
+            'Sensor_ID': sensor_id,
+            'Plant_ID': plant_id,
+            'Temperature': temperature_celsius,
+            'Humidity': humidity_percent,
+            'Timestamp': time
+        }
+        
+        insert_into_table(conn, cur, 'Sensors', sensor)
+        insert_into_table(conn, cur, 'Plants', plant)
+        insert_into_table(conn, cur, 'Measurments', measurement)
+        
+        cur.close()
 
         # Return a success response
         return jsonify({"status": "success", "message": "Data received successfully", "data": unpacked_data}), 201
