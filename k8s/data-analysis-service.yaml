@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-analysis-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-analysis-service
+  template:
+    metadata:
+      labels:
+        app: data-analysis-service
+    spec:
+      containers:
+      - name: analysis
+        image: AlexisBagot/data-analysis-service:latest
+        ports:
+        - containerPort: 5001  # Assurez-vous que ce port est correct
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-analysis-service
+spec:
+  selector:
+    app: data-analysis-service
+  ports:
+  - protocol: TCP
+    port: 5001
+    targetPort: 5001
+  type: ClusterIP
