@@ -90,5 +90,5 @@ ENV/
 .ropeproject
 
 # Postgres data
-.data/
 data/
+data/base/
