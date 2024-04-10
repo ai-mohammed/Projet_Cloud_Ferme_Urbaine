@@ -1,5 +1,12 @@
 version: '3.8'
 services:
+  ui-dashboard:
+    build: ../ui-dashboard
+    ports:
+      - "8501:8501"
+    networks:
+      - my_network
+
   flask-app:
     build: .
     ports:
