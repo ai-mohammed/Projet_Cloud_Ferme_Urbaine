@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   flask-app:
-    build: .\data-collection-service\Dockerfile
+    build: .\data-collection-service\
     ports:
       - "5000:5000"
     environment:
@@ -25,7 +25,7 @@ services:
       - my_network
 
   data-storage-service:
-    build: .\data-storage-service\Dockerfile
+    build: .\data-storage-service\
     networks:
       - my_network
     depends_on:
