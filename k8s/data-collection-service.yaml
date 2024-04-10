@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-collection-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-collection-service
+  template:
+    metadata:
+      labels:
+        app: data-collection-service
+    spec:
+      containers:
+      - name: flask
+        image: AlexisBagot/data-collection-service:latest
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-collection-service
+spec:
+  selector:
+    app: data-collection-service
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+  type: ClusterIP
