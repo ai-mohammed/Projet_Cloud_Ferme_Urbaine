@@ -92,3 +92,9 @@ ENV/
 # Postgres data
 .data/
 data/
+
+#already on main 
+data-collection-service/
+docker-compose.yaml
+Dockerfile
+README.md
