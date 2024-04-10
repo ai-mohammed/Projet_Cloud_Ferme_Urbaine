@@ -1,24 +1,11 @@
-# Python 3.11.9
-FROM python:3.11.9-bookworm
+# Use an official PostgreSQL runtime as a parent image
+FROM postgres:latest
 
-# Set working directory to /app
-WORKDIR /app
+# Set the working directory in the container to /docker-entrypoint-initdb.d
+WORKDIR /docker-entrypoint-initdb.d
 
-# Add current directory to /app
-ADD . /app
+# Add init.sql to the docker-entrypoint-initdb.d directory
+ADD init.sql /docker-entrypoint-initdb.d
 
-ENV DB_HOST=host.docker.internal
-ENV DB_PORT=5432
-ENV DB_NAME=Urban_Farm_Monitoring
-ENV DB_USER=admin
-ENV DB_PASS=adminXDD
-
-
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Make port 80 available
-EXPOSE 80
-
-# Run models.py
-CMD ["python", "models.py"]
+# Run the SQL commands in init.sql when the container starts
+CMD ["postgres"]
