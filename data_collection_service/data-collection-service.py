@@ -2,10 +2,8 @@ from flask import Flask, request, jsonify
 import base64
 import msgpack
 import traceback
-from data_storage_service.models import conn, cur
-
-
-
+import psycopg2
+import os
 
 app = Flask(__name__)
 
@@ -52,27 +50,46 @@ def receive_data():
                 humidity_percent = float(measures[key])
                 break
 
-# Insérer les données dans la table Sensors
-        cur.execute('''
-    INSERT INTO Sensors (ID, Provider, Location) 
-    VALUES (%s, %s, %s)
-''', (sensor_id, sensor_version, 'Location'))
 
-# Insérer les données dans la table Plants
-        cur.execute('''
-    INSERT INTO Plants (ID, Species, Optimal_Temp, Optimal_Humidity) 
-    VALUES (%s, %s, %s, %s)
-''', (plant_id, 'Species', [20.0, 30.0], [40.0, 60.0]))
+        host=os.getenv("postgtres-server")
+        port=os.getenv("5432")
+        database=os.getenv("POSTGRES_DB")
+        user=os.getenv("POSTGRES_USER")
+        password=os.getenv("POSTGRES_PASSWORD")
 
-# Insérer les données dans la table Measurements
-        cur.execute('''
-    INSERT INTO Measurements (Sensor_ID, Plant_ID, Temperature, Humidity, Timestamp) 
-    VALUES (%s, %s, %s, %s, %s)
-''', (sensor_id, plant_id, temperature_celsius, humidity_percent, time))
+        # Connect to PostgreSQL server
+        conn = psycopg2.connect(f"dbname='{database}' user='{user}' host='{host}' port='{port}' password='{password}'")
+        def insert_into_table(conn, table, data):
+            # Create a cursor from the connection
+            cur = conn.cursor()
 
+            # Create the SQL command
+            columns = ', '.join(data.keys())
+            values = ', '.join(f'%({key})s' for key in data.keys())
+            sql = f"INSERT INTO {table} ({columns}) VALUES ({values})"
 
-        # Commit les changements
-        conn.commit()
+            # Execute the SQL command
+            cur.execute(sql, data)
+
+            # Commit the changes
+            conn.commit()
+
+            # Close the cursor
+            cur.close()
+
+        
+        data1={
+            'ID': sensor_id,
+            'Provider': sensor_version,
+            'Location': 'Location'
+        }
+        data2={}
+        data3={}
+        
+        insert_into_table(conn, 'Sensors', data1)
+        insert_into_table(conn, 'Plants', data2)
+        insert_into_table(conn, 'Measurments', data3)
+   
 
         # Return a success response
         return jsonify({"status": "success", "message": "Data received successfully", "data": unpacked_data}), 201
