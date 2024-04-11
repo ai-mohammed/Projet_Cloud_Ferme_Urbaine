@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import base64
 import msgpack
 import traceback
+from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -11,22 +12,43 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://admin:admin@data-storage-s
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Définition du modèle de données
-class Measurement(db.Model):
-    __tablename__ = 'measurement'
+# Modèles de données
+class Sensor(db.Model):
+    __tablename__ = 'sensors'
     id = db.Column(db.Integer, primary_key=True)
+    sensor_id = db.Column(db.String(64), unique=True, nullable=False)
+    sensor_version = db.Column(db.String(64), nullable=False)
+    measurements = db.relationship('Measurement', backref='sensor')
+
+class Plant(db.Model):
+    __tablename__ = 'plants'
+    id = db.Column(db.Integer, primary_key=True)
+    plant_id = db.Column(db.String(64), unique=True, nullable=False)
+    plant_details = db.Column(db.Text)
+    measurements = db.relationship('Measurement', backref='plant')
+
+class Measurement(db.Model):
+    __tablename__ = 'measurements'
+    id = db.Column(db.Integer, primary_key=True)
+    sensor_id = db.Column(db.Integer, db.ForeignKey('sensors.id'), nullable=False)
+    plant_id = db.Column(db.Integer, db.ForeignKey('plants.id'), nullable=False)
+    time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
 
-    def __init__(self, temperature, humidity):
-        self.temperature = temperature
-        self.humidity = humidity
+class Anomaly(db.Model):
+    __tablename__ = 'anomalies'
+    id = db.Column(db.Integer, primary_key=True)
+    measurement_id = db.Column(db.Integer, db.ForeignKey('measurements.id'), nullable=False)
+    anomaly_details = db.Column(db.Text)
+    detected_on = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-# Assurez-vous que la table existe
+# Assurez-vous que les tables existent
 @app.before_first_request
 def create_tables():
     db.create_all()
 
+# Route pour recevoir les données
 @app.route('/receive', methods=['POST'])
 def receive_data():
     try:
@@ -40,34 +62,30 @@ def receive_data():
         # Log or process your data here
         print(unpacked_data)
         
-        # Extraction de 'measures'
+        # Extract measures
         measures = unpacked_data.get('measures', {})
 
-        # Température
-        temperature_celsius = None
-        temp_keys = ['temperature', 'température']
-        for key in temp_keys:
-            if key in measures:
-                temp_value = measures[key]
-                if '°C' in temp_value:
-                    temperature_celsius = float(temp_value.replace('°C', ''))
-                elif '°F' in temp_value:
-                    temperature_celsius = (float(temp_value.replace('°F', '')) - 32) * 5.0 / 9.0
-                elif '°K' in temp_value:
-                    temperature_celsius = float(temp_value.replace('°K', '')) - 273.15
-                break
+        # Process temperature and humidity from measures
+        temperature_celsius = measures.get('temperature', None)
+        humidity_percent = measures.get('humidite', None)
 
-        # Humidité
-        humidity_percent = None
-        humid_keys = ['humidity', 'humidite']
-        for key in humid_keys:
-            if key in measures:
-                humidity_value = measures[key]
-                humidity_percent = float(humidity_value.replace('%', ''))
-                break
+        # Find or create the sensor and plant records
+        sensor = Sensor.query.filter_by(sensor_id=unpacked_data['sensor_id']).first()
+        if not sensor:
+            sensor = Sensor(sensor_id=unpacked_data['sensor_id'], sensor_version=unpacked_data['sensor_version'])
+            db.session.add(sensor)
 
-        # Enregistrement dans la base de données
-        new_measurement = Measurement(temperature=temperature_celsius, humidity=humidity_percent)
+        plant = Plant.query.filter_by(plant_id=str(unpacked_data['plant_id'])).first()
+        if not plant:
+            plant = Plant(plant_id=str(unpacked_data['plant_id']))
+            db.session.add(plant)
+
+        # Commit to save the sensor and plant if they are new
+        db.session.commit()
+
+        # Create a new measurement
+        new_measurement = Measurement(sensor_id=sensor.id, plant_id=plant.id,
+                                      temperature=temperature_celsius, humidity=humidity_percent)
         db.session.add(new_measurement)
         db.session.commit()
 

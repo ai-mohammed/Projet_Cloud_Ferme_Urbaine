@@ -6,3 +6,4 @@ flask_pymongo
 msgpack==1.0.2
 flask-SQLAlchemy
 psycopg2-binary>=2.8
+datetime
