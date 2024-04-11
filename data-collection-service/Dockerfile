@@ -18,4 +18,4 @@ ENV FLASK_APP=data-collection-service.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
 # Run app.py when the container launches
-CMD ["flask", "run"]
+CMD ["flask", "run", "data-collection-service.py"]

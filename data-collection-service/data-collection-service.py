@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
 import base64
 import msgpack
 import traceback
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
