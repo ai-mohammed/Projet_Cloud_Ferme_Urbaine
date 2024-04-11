@@ -9,6 +9,9 @@ COPY . .
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir Flask msgpack
+# Install PostgreSQL development packages
+RUN apt-get update && apt-get install -y libpq-dev gcc
+RUN pip install psycopg2
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000

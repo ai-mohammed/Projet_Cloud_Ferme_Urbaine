@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import base64
 import msgpack
 import traceback
-import psycopg
+import psycopg2
 import os
 
 app = Flask(__name__)
@@ -47,8 +47,22 @@ def receive_data():
         humid_keys = ['humidity', 'humidite']
         for key in humid_keys:
             if key in measures:
-                humidity_percent = float(measures[key])
+                # Remove '%' from the string before converting
+                humidity_value = measures[key].replace('%', '')
+                humidity_percent = float(humidity_value)
                 break
+            
+            
+        # Humidité
+        humidity_percent = None
+        humid_keys = ['humidity', 'humidite']
+        for key in humid_keys:
+            if key in measures:
+                # Remove '%' from the string before converting
+                humidity_value = measures[key].replace('%', '')
+                humidity_percent = float(humidity_value)
+                break
+
 
         # Env variables
         host=os.getenv("postgtres-server")
@@ -58,7 +72,7 @@ def receive_data():
         password=os.getenv("POSTGRES_PASSWORD")
 
         # Connect to PostgreSQL server
-        conn = psycopg.connect(f"dbname='{database}' user='{user}' host='{host}' port='{port}' password='{password}'")
+        conn = psycopg2.connect(f"dbname='{database}' user='{user}' host='{host}' port='{port}' password='{password}'")
         cur = conn.cursor()
         
         # Function to insert data into a table
