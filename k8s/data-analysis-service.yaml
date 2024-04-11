@@ -14,9 +14,9 @@ spec:
     spec:
       containers:
       - name: analysis
-        image: AlexisBagot/data-analysis-service:latest
+        image: alexisbagot/data-analysis-service:latest
         ports:
-        - containerPort: 5001  # Assurez-vous que ce port est correct
+        - containerPort: 5001  
 ---
 apiVersion: v1
 kind: Service

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: AlexisBagot/api-gateway:latest
+        image: alexisbagot/api-gateway:latest
         ports:
         - containerPort: 80
 ---

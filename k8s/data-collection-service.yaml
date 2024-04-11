@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
       - name: flask
-        image: AlexisBagot/data-collection-service:latest
+        image: alexisbagot/data-collection-service:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 5000
 ---
@@ -29,4 +30,4 @@ spec:
   - protocol: TCP
     port: 5000
     targetPort: 5000
-  type: ClusterIP
+  type: NodePort
