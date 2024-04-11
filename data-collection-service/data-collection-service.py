@@ -1,9 +1,28 @@
 from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 import base64
 import msgpack
 import traceback
 
 app = Flask(__name__)
+# Configuration de la base de données 
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://admin:admin@data-storage-service:5432/Urban_Farm_Monitoring'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# Modèle de données
+class Measurement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    temperature = db.Column(db.Float)
+    humidity = db.Column(db.Float)
+
+    def __init__(self, temperature, humidity):
+        self.temperature = temperature
+        self.humidity = humidity
+
+# Assurez-vous que la table existe
+with app.app_context():
+    db.create_all()
 
 @app.route('/receive', methods=['POST'])
 def receive_data():
@@ -44,8 +63,13 @@ def receive_data():
                 humidity_percent = float(humidity_value.replace('%', ''))
                 break
 
+        # Enregistrement dans la base de données
+        new_measurement = Measurement(temperature=temperature_celsius, humidity=humidity_percent)
+        db.session.add(new_measurement)
+        db.session.commit()
+
         # Return a success response
-        return jsonify({"status": "success", "message": "Data received successfully", "data": unpacked_data}), 201
+        return jsonify({"status": "success", "message": "Data received and saved successfully", "data": unpacked_data}), 201
     except Exception as e:
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 400
