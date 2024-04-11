@@ -5,13 +5,15 @@ import msgpack
 import traceback
 
 app = Flask(__name__)
-# Configuration de la base de données 
+
+# Configuration de la base de données
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://admin:admin@data-storage-service:5432/Urban_Farm_Monitoring'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Modèle de données
+# Définition du modèle de données
 class Measurement(db.Model):
+    __tablename__ = 'measurement'
     id = db.Column(db.Integer, primary_key=True)
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
@@ -21,7 +23,8 @@ class Measurement(db.Model):
         self.humidity = humidity
 
 # Assurez-vous que la table existe
-with app.app_context():
+@app.before_first_request
+def create_tables():
     db.create_all()
 
 @app.route('/receive', methods=['POST'])
