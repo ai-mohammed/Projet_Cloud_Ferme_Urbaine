@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 import base64
 import msgpack
 import traceback
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
+import re
 
 app = Flask(__name__)
 
@@ -12,7 +13,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://admin:admin@data-storage-s
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Modèles de données
+# Modèle pour les capteurs
 class Sensor(db.Model):
     __tablename__ = 'sensors'
     id = db.Column(db.Integer, primary_key=True)
@@ -20,6 +21,7 @@ class Sensor(db.Model):
     sensor_version = db.Column(db.String(64), nullable=False)
     measurements = db.relationship('Measurement', backref='sensor')
 
+# Modèle pour les plantes
 class Plant(db.Model):
     __tablename__ = 'plants'
     id = db.Column(db.Integer, primary_key=True)
@@ -27,6 +29,7 @@ class Plant(db.Model):
     plant_details = db.Column(db.Text)
     measurements = db.relationship('Measurement', backref='plant')
 
+# Modèle pour les mesures
 class Measurement(db.Model):
     __tablename__ = 'measurements'
     id = db.Column(db.Integer, primary_key=True)
@@ -36,19 +39,58 @@ class Measurement(db.Model):
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
 
-class Anomaly(db.Model):
-    __tablename__ = 'anomalies'
-    id = db.Column(db.Integer, primary_key=True)
-    measurement_id = db.Column(db.Integer, db.ForeignKey('measurements.id'), nullable=False)
-    anomaly_details = db.Column(db.Text)
-    detected_on = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-# Assurez-vous que les tables existent
+# Assurez-vous que les tables existent avec la bonne structure au démarrage
 @app.before_first_request
-def create_tables():
+def create_or_update_tables():
+    # Mettre à jour ou créer les tables
+    db.reflect()
+    db.drop_all()
     db.create_all()
 
-# Route pour recevoir les données
+def clean_and_convert_data(measures):
+    """Nettoie et convertit les mesures de température et d'humidité."""
+    temperature_celsius = None
+    humidity_percent = None
+    
+    # Traitement de la température
+    temp_keys = ['temperature', 'température']  # Support des clés en anglais et en français
+    for key in temp_keys:
+        if key in measures:
+            temp_value = measures[key]
+            # Retirer les caractères non-numériques, sauf les indicateurs d'unité
+            temp_value = re.sub(r"[^\d.°CFK]", "", temp_value)
+            
+            if '°C' in temp_value:
+                temperature_celsius = float(temp_value.replace('°C', ''))
+            elif '°F' in temp_value:
+                temperature_fahrenheit = float(temp_value.replace('°F', ''))
+                temperature_celsius = (temperature_fahrenheit - 32) * 5.0 / 9.0
+            elif '°K' in temp_value:
+                temperature_kelvin = float(temp_value.replace('°K', ''))
+                temperature_celsius = temperature_kelvin - 273.15
+            break  # Arrêter après avoir trouvé la première clé valide
+    
+    # Traitement de l'humidité
+    humid_keys = ['humidity', 'humidite']  # Support des clés en anglais et en français
+    for key in humid_keys:
+        if key in measures:
+            humidity_value = measures[key]
+            # Retirer les caractères non-numériques, sauf le symbole pourcent
+            humidity_value = re.sub(r"[^\d.%]", "", humidity_value)
+            if '%' in humidity_value:
+                humidity_percent = float(humidity_value.replace('%', ''))
+            break  # Arrêter après avoir trouvé la première clé valide
+    
+    # Vérifier que les deux mesures essentielles ont été trouvées et nettoyées
+    if temperature_celsius is None or humidity_percent is None:
+        raise ValueError("Temperature or humidity data is missing or invalid.")
+    
+    return {
+        'temperature': temperature_celsius,
+        'humidity': humidity_percent
+    }
+
+# Utiliser cette fonction dans la route de réception des données
 @app.route('/receive', methods=['POST'])
 def receive_data():
     try:
@@ -59,38 +101,37 @@ def receive_data():
         # Unpack the msgpack data
         unpacked_data = msgpack.unpackb(decoded_data, raw=False)
 
-        # Log or process your data here
-        print(unpacked_data)
-        
-        # Extract measures
+        # Nettoyer et convertir les mesures
         measures = unpacked_data.get('measures', {})
+        clean_data = clean_and_convert_data(measures)
 
-        # Process temperature and humidity from measures
-        temperature_celsius = measures.get('temperature', None)
-        humidity_percent = measures.get('humidite', None)
-
-        # Find or create the sensor and plant records
+        # Trouver ou créer le capteur
         sensor = Sensor.query.filter_by(sensor_id=unpacked_data['sensor_id']).first()
         if not sensor:
             sensor = Sensor(sensor_id=unpacked_data['sensor_id'], sensor_version=unpacked_data['sensor_version'])
             db.session.add(sensor)
 
+        # Trouver ou créer la plante
         plant = Plant.query.filter_by(plant_id=str(unpacked_data['plant_id'])).first()
         if not plant:
-            plant = Plant(plant_id=str(unpacked_data['plant_id']))
+            plant = Plant(plant_id=str(unpacked_data['plant_id']), plant_details='Details about the plant')
             db.session.add(plant)
 
-        # Commit to save the sensor and plant if they are new
-        db.session.commit()
+        db.session.commit()  # Assurer que le capteur et la plante sont sauvegardés pour obtenir leurs ID
 
-        # Create a new measurement
-        new_measurement = Measurement(sensor_id=sensor.id, plant_id=plant.id,
-                                      temperature=temperature_celsius, humidity=humidity_percent)
+        # Créer une nouvelle mesure
+        new_measurement = Measurement(
+            sensor_id=sensor.id,
+            plant_id=plant.id,
+            temperature=clean_data['temperature'],
+            humidity=clean_data['humidity'],
+            time=datetime.utcnow()
+        )
         db.session.add(new_measurement)
         db.session.commit()
 
-        # Return a success response
         return jsonify({"status": "success", "message": "Data received and saved successfully", "data": unpacked_data}), 201
+
     except Exception as e:
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 400

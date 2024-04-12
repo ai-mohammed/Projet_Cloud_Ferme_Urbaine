@@ -52,9 +52,9 @@ services:
   #   image: abelfodil/sensor:0.0.1
   #   network_mode: "host"
   #   environment:
-  #     - SERVER_URL=http://localhost:8080/receive
+  #     - SERVER_URL=http://192.168.49.2:30797/receive
   #     - PLANT_ID=12
   #     - SENSOR_ID=88712531
   #     - SENSOR_VERSION=FR-v7
   #     - PERIOD=2s
-  #     - MEASURES=temperature:285.15°K,temperature:286.15°K,humidity:12%
+  #     - MEASURES=temperature:285.15°K,humidity:12%
