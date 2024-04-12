@@ -13,20 +13,34 @@ spec:
         app: data-analysis-service
     spec:
       containers:
-      - name: analysis
+      - name: data-analysis-service
         image: alexisbagot/data-analysis-service:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 5001  
+        - containerPort: 8501  # Assurez-vous que c'est le bon port pour Streamlit
+        env:
+        - name: DATABASE_HOST
+          value: data-storage-service
+        - name: POSTGRES_USER
+          value: "admin"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: postgres-password
+        - name: POSTGRES_DB
+          value: "data-storage-db"
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: data-analysis-service
+  name: streamlit-service
 spec:
   selector:
     app: data-analysis-service
   ports:
-  - protocol: TCP
-    port: 5001
-    targetPort: 5001
-  type: ClusterIP
+    - protocol: TCP
+      port: 8501
+      targetPort: 8501
+  type: NodePort
