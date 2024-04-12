@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: flask
-        image: alexisbagot/data-collection-service:latest
+        image: alexisbagot/data-collection-service:0.1
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
